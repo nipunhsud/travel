@@ -41,13 +41,12 @@ class Deal(BaseModel):
 
 def search(today: str) -> list[Deal]:
     from pydantic_ai import Agent
-    from pydantic_ai.common_tools.duckduckgo import duckduckgo_search_tool
-    from pydantic_ai.messages import ToolReturnPart
+    from pydantic_ai.capabilities import WebSearch
 
     agent = Agent(
         MODEL,
         output_type=list[Deal],
-        tools=[duckduckgo_search_tool(max_results=10)],
+        capabilities=[WebSearch(local="duckduckgo")],  # native search when the model has it, else DuckDuckGo
         instructions=(
             "You find current vacation deals departing Ottawa (YOW). Run several searches: airline seat sales, "
             "all-inclusive packages, deal blogs and error fares from Ottawa. Only report deals you actually saw in "
@@ -56,9 +55,11 @@ def search(today: str) -> list[Deal]:
         ),
     )
     result = agent.run_sync(f"Today is {today}. Find the best vacation deals from Ottawa, up to 25.")
-    # Guard against hallucinated deals: keep only URLs the search tool actually returned.
+    # Guard against hallucinated deals: keep only URLs a search actually returned.
+    # part_kind is 'tool-return' (DuckDuckGo) or 'builtin-tool-return' (native search).
     seen = " ".join(
-        str(p.content) for m in result.all_messages() for p in m.parts if isinstance(p, ToolReturnPart)
+        str(p.content) for m in result.all_messages() for p in m.parts
+        if getattr(p, "part_kind", "").endswith("tool-return")
     )
     kept = [d for d in result.output if d.url in seen]
     print(f"{len(result.output)} deals extracted, {len(kept)} with URLs found in search results", file=sys.stderr)

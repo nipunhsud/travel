@@ -2,7 +2,7 @@
 
 Weekly search for vacation deals from Ottawa (YOW).
 
-1. A Pydantic AI agent searches DuckDuckGo and returns validated `Deal` objects. Deals whose URL never showed up in the search results are dropped.
+1. A Pydantic AI agent searches the web and returns validated `Deal` objects. It uses the model's built-in web search, or DuckDuckGo if the model has none. Deals whose URL never showed up in the search results are dropped.
 2. `facebook/bart-large-mnli` (zero-shot) labels each deal by `trip_type` and `deal_kind`, and records a confidence score for each label.
 3. Rows are saved to `data/deals-YYYY-MM-DD.arrow` (Arrow IPC/Feather), with a text summary in `data/insights-YYYY-MM-DD.txt`.
 
