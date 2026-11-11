@@ -1,6 +1,8 @@
-"""Run: uv run --with pydantic python test_deals.py"""
+"""Run: uv run --python 3.11 --with pydantic-ai-slim python test_deals.py"""
 
-from deals import insights
+from pydantic_ai.messages import ModelRequest, ModelResponse, ToolCallPart, ToolReturnPart
+
+from deals import Deal, insights, verified
 
 
 def row(dest, price, trip, kind, score=0.9, posted="2026-11-01"):
@@ -21,4 +23,15 @@ assert "- beach: 2 deals, best Cancun $899, median $949" in text, text
 assert text.index("- city:") < text.index("- beach:"), text  # groups sorted by best price
 assert "1 labels scored under 0.5" in text, text
 assert "1 deals show no posted date" in text, text
+
+# URL guard: a URL only in the model's own output (tool-call args) must not count as seen.
+real, fake = (Deal(destination=d, price_cad=1.0, what="w", travel_dates=None, provider="p", url=f"https://{d}.example/x",
+                   posted_on=None, summary="s") for d in ("real", "fake"))
+messages = [
+    ModelResponse(parts=[ToolCallPart(tool_name="web_search", args={"query": "q"}, tool_call_id="1")]),
+    ModelRequest(parts=[ToolReturnPart(tool_name="web_search", content=[{"href": real.url}], tool_call_id="1")]),
+    ModelResponse(parts=[ToolCallPart(tool_name="final_result", args={"response": [real.model_dump(), fake.model_dump()]},
+                                      tool_call_id="2")]),
+]
+assert verified([real, fake], messages) == [real]
 print("ok")
