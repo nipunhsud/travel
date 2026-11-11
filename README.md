@@ -8,7 +8,7 @@ Weekly search for vacation deals from Ottawa (YOW).
 
 ```sh
 ANTHROPIC_API_KEY=... uv run deals.py        # TRAVEL_MODEL=... to swap the LLM
-uv run --with pydantic python test_deals.py  # self-check
+uv run --python 3.11 --with pydantic-ai-slim python test_deals.py  # self-check, no key needed
 ```
 
 Read the output with `pyarrow.feather.read_table(path)` or `polars.read_ipc(path)`.
